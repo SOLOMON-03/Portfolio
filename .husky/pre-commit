@@ -1,0 +1,29 @@
+#!/bin/sh
+
+echo "🔍 Checking for console.log in staged JS/TS files..."
+
+FILES=$(git diff --cached --name-only | grep -E '^(app|components|lib)/.*\.(js|jsx|ts|tsx)$') || true
+
+if [ -z "$FILES" ]; then
+  echo "✅ No staged JS/TS files found."
+else
+  FOUND_LOGS=0
+
+  for file in $FILES; do
+    if grep -q 'console\.log' "$file"; then
+      echo "🚫 console.log found in: $file"
+      grep -n 'console\.log' "$file"
+      FOUND_LOGS=1
+    fi
+  done
+
+  if [ "$FOUND_LOGS" -eq 1 ]; then
+    echo "-----------------------------------------------------"
+    echo "🚫 Commit blocked: Please remove console.log statements"
+    echo "-----------------------------------------------------"
+    exit 1
+  fi
+fi
+
+echo "✅ No console.log statements found. Proceeding with lint-staged..."
+npx lint-staged
